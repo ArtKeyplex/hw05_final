@@ -73,6 +73,5 @@ class Follow(models.Model):
     )
     User.add_to_class('follow',
                       models.ManyToManyField('self',
-
                                              related_name='relationship',
                                              symmetrical=False))

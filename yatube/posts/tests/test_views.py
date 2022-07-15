@@ -74,7 +74,6 @@ class PostUrlTests(TestCase):
                              f'{self.post.id}'})): 'posts/post_create.html'
         }
 
-
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -181,7 +180,7 @@ class PostUrlTests(TestCase):
 
     def test_index_is_cached(self):
         post_cache = Post.objects.create(
-            author= self.author,
+            author=self.author,
             text='тестовый пост для проверки кэше'
         )
         response = self.authorized_client.get(reverse('posts:index'))
