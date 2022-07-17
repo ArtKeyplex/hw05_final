@@ -1,9 +1,16 @@
 from django.contrib import admin
 
-from .models import Group, Post
+from .models import Comment, Group, Post, Follow
+
+
+class CommentInLine(admin.TabularInline):
+    model = Comment
 
 
 class PostAdmin(admin.ModelAdmin):
+    inlines = [
+        CommentInLine,
+    ]
     list_display = (
         'pk',
         'text',
@@ -19,3 +26,5 @@ class PostAdmin(admin.ModelAdmin):
 
 admin.site.register(Post, PostAdmin)
 admin.site.register(Group)
+admin.site.register(Follow)
+admin.site.register(Comment)

@@ -1,6 +1,6 @@
 import shutil
 import tempfile
-
+from http import HTTPStatus
 
 from django import forms
 from django.contrib.auth import get_user_model
@@ -9,7 +9,7 @@ from django.conf import settings
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
-from posts.models import Comment, Group, Post
+from posts.models import Comment, Group, Post, Follow
 
 User = get_user_model()
 
@@ -126,10 +126,7 @@ class PostUrlTests(TestCase):
         response = self.authorized_client.get(reverse
                                               ('posts:post_detail',
                                                kwargs={'post_id': '1'}))
-        self.assertEqual(response.context.get('post').text, 'Тестовая пост')
-        self.assertEqual(response.context.get('post').group, self.post.group)
-        self.check_fields(response.context.get('post').text, self.post.text)
-        self.assertEqual(response.context.get('post').image, self.post.image)
+        self.check_fields(response.context['post'], self.post)
 
     def test_create_post_page_show_correct_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
@@ -165,18 +162,16 @@ class PostUrlTests(TestCase):
                 self.assertIsInstance(form_field, expected)
 
     def test_comment_appears_on_the_page(self):
+        comment_count = Comment.objects.count()
         self.comment = Comment.objects.create(
             author=self.user,
             post=self.post,
             text='Супер проверочка'
         )
-        self.assertTrue(
-            Comment.objects.filter(
-                author=self.user,
-                post=self.post,
-                text='Супер проверочка'
-            ).exists()
-        )
+
+        self.assertEqual(self.comment.author, self.post.author)
+        self.assertEqual('Супер проверочка', self.comment.text)
+        self.assertEqual(comment_count+1, Comment.objects.count())
 
     def test_index_is_cached(self):
         post_cache = Post.objects.create(
@@ -187,6 +182,43 @@ class PostUrlTests(TestCase):
         post_cache.delete()
         response2 = self.authorized_client.get(reverse('posts:index'))
         self.assertNotEqual(response, response2)
+
+    def test_authorized_client_can_follow(self):
+        new_user = User.objects.create(username='Beton')
+        new_authorized_client = Client()
+        new_authorized_client.force_login(new_user)
+        new_authorized_client.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': self.user.username}
+            )
+        )
+        follower = Follow.objects.get(author=self.user, user=new_user)
+        self.assertTrue(follower)
+
+    def test_authorized_client_can_unfollow(self):
+        new_user = User.objects.create(username='Beton')
+        new_authorized_client = Client()
+        new_authorized_client.force_login(new_user)
+        new_authorized_client.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': self.user.username}
+            )
+        )
+        new_authorized_client.get(
+            reverse(
+                'posts:profile_unfollow',
+                kwargs={'username': self.user.username}
+            )
+        )
+        self.assertEqual(Follow.objects.count(), 0)
+
+    def test_follow_index_following(self):
+        Follow.objects.create(author=self.user, user=self.author)
+        response = self.authorized_author.get(reverse('posts:follow_index'))
+        first_object = response.context['page_obj'][0]
+        self.assertEqual(first_object.text, self.post.text)
 
 
 class PaginatorViewsTest(TestCase):

@@ -117,8 +117,7 @@ def add_comment(request, post_id):
 def follow_index(request):
     """Страница подписок текущего пользователя"""
     user = request.user
-    authors = user.follower.values_list('author', flat=True)
-    post_list = Post.objects.filter(author__id__in=authors)
+    post_list = Post.objects.filter(author__following__user=user)
     page_obj = make_paginator(request, post_list, 10)
     context = {
         'page_obj': page_obj,

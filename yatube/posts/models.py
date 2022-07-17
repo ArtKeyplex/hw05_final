@@ -15,7 +15,9 @@ class Group(models.Model):
 
 
 class Post(models.Model):
-    text = models.TextField(verbose_name='текст')
+    text = models.TextField(verbose_name='текст',
+                            help_text='Текст нового комментария',
+                            )
     pub_date = models.DateTimeField(auto_now_add=True)
     group = models.ForeignKey(
         Group,
@@ -23,7 +25,8 @@ class Post(models.Model):
         null=True,
         related_name='posts',
         on_delete=models.SET_NULL,
-        verbose_name='группа'
+        verbose_name='группа',
+        help_text='Группа, к которой будет относиться пост',
     )
     author = models.ForeignKey(
         User,
@@ -56,7 +59,8 @@ class Comment(models.Model):
         on_delete=models.CASCADE,
         related_name='comments'
     )
-    text = models.TextField(verbose_name='текст')
+    text = models.TextField(verbose_name='текст',
+                            help_text='Текст вашего комментария')
     created = models.DateTimeField(auto_now_add=True)
 
 
