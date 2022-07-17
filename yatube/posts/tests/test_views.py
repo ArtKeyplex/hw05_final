@@ -1,6 +1,5 @@
 import shutil
 import tempfile
-from http import HTTPStatus
 
 from django import forms
 from django.contrib.auth import get_user_model
@@ -171,7 +170,7 @@ class PostUrlTests(TestCase):
 
         self.assertEqual(self.comment.author, self.post.author)
         self.assertEqual('Супер проверочка', self.comment.text)
-        self.assertEqual(comment_count+1, Comment.objects.count())
+        self.assertEqual(comment_count + 1, Comment.objects.count())
 
     def test_index_is_cached(self):
         post_cache = Post.objects.create(
