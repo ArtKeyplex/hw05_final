@@ -130,8 +130,8 @@ class PostUrlTests(TestCase):
         """Шаблон post_detail сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse
                                               ('posts:post_detail',
-                                               kwargs=
-                                               {'post_id': f'{self.post.id}'}))
+                                               kwargs={'post_id':
+                                                       f'{self.post.id}'}))
         index_object = response.context['post']
         self.object_list = {
             index_object.text: self.post.text,
@@ -164,8 +164,8 @@ class PostUrlTests(TestCase):
         )
         response = self.authorized_author.get(reverse
                                               ('posts:post_edit',
-                                               kwargs=
-                                               {'post_id': f'{test_post.id}'}))
+                                               kwargs={'post_id':
+                                                       f'{test_post.id}'}))
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,

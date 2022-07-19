@@ -28,6 +28,7 @@ urlpatterns = [
     path('auth/', include('django.contrib.auth.urls')),
     path('about/', include('about.urls', namespace='about')),
     path('create/', include('users.urls', namespace='create')),
+
 ]
 handler404 = 'core.views.page_not_found'
 handler403 = 'core.views.csrf_failure'
