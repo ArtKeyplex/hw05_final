@@ -9,6 +9,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from posts.models import Comment, Group, Post, Follow
+from posts.forms import PostForm
 
 User = get_user_model()
 
@@ -42,6 +43,7 @@ class PostUrlTests(TestCase):
         cls.post = Post.objects.create(
             author=cls.user,
             text='Тестовая пост',
+            group=cls.group,
             image=uploaded
         )
 
@@ -101,6 +103,8 @@ class PostUrlTests(TestCase):
         response = (self.authorized_client.
                     get(reverse('posts:group_list',
                                 kwargs={'slug': 'test-slug'})))
+        first_object = response.context['page_obj'][0]
+        self.assertEqual(first_object.text, self.post.text)
         self.assertEqual(response.context.get('group').title,
                          'Тестовая группа')
         self.assertEqual(response.context.get('group').slug,
@@ -117,15 +121,26 @@ class PostUrlTests(TestCase):
         self.assertEqual(response.context.get('user').id,
                          self.post.id)
 
-    def check_fields(self, context, obj):
-        return self.assertEqual(context, obj)
+    def check_fields(self, obj_list):
+        for obj, post_obj in obj_list.items():
+            with self.subTest(obj=obj):
+                self.assertEqual(obj, post_obj)
 
     def test_post_detail_page_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse
                                               ('posts:post_detail',
-                                               kwargs={'post_id': '1'}))
-        self.check_fields(response.context['post'], self.post)
+                                               kwargs=
+                                               {'post_id': f'{self.post.id}'}))
+        index_object = response.context['post']
+        self.object_list = {
+            index_object.text: self.post.text,
+            index_object.author: self.post.author,
+            index_object.pub_date: self.post.pub_date,
+            index_object.image: self.post.image
+
+        }
+        self.check_fields(self.object_list)
 
     def test_create_post_page_show_correct_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
@@ -142,14 +157,15 @@ class PostUrlTests(TestCase):
 
     def test_edit_post_page_show_correct_context(self):
         """Шаблон edit_post сформирован с правильным контекстом."""
-        Post.objects.create(
+        test_post = Post.objects.create(
             author=self.author,
             text='Тестовая пост',
             id='3'
         )
         response = self.authorized_author.get(reverse
                                               ('posts:post_edit',
-                                               kwargs={'post_id': '3'}))
+                                               kwargs=
+                                               {'post_id': f'{test_post.id}'}))
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,
@@ -161,16 +177,19 @@ class PostUrlTests(TestCase):
                 self.assertIsInstance(form_field, expected)
 
     def test_comment_appears_on_the_page(self):
-        comment_count = Comment.objects.count()
-        self.comment = Comment.objects.create(
-            author=self.user,
-            post=self.post,
-            text='Супер проверочка'
-        )
-
-        self.assertEqual(self.comment.author, self.post.author)
-        self.assertEqual('Супер проверочка', self.comment.text)
-        self.assertEqual(comment_count + 1, Comment.objects.count())
+        Post.objects.create(
+            author=self.author,
+            text=self.post.text)
+        Follow.objects.create(user=self.user,
+                              author=self.author)
+        response = self.authorized_client.get(reverse('posts:follow_index'))
+        post_text_0 = response.context['page_obj'][0].text
+        self.assertEqual(post_text_0, self.post.text)
+        client = User.objects.create(username='Cat')
+        self.client = Client()
+        self.client.force_login(client)
+        response = self.client.get(reverse('posts:follow_index'))
+        self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_index_is_cached(self):
         post_cache = Post.objects.create(
