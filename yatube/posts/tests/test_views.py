@@ -1,6 +1,7 @@
 import shutil
 import tempfile
 
+import django.forms
 from django import forms
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -9,6 +10,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from posts.models import Group, Post, Follow
+from posts.forms import PostForm
 
 User = get_user_model()
 
@@ -144,12 +146,12 @@ class PostUrlTests(TestCase):
     def test_create_post_page_show_correct_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:post_create'))
-        form_fields = {
-            'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField,
-            'image': forms.fields.ImageField,
-        }
-        for value, expected in form_fields.items():
+        form = PostForm()
+        expected = (forms.fields.CharField,
+                    forms.fields.ImageField,
+                    forms.fields.ChoiceField)
+        fields = form.fields
+        for value in fields:
             with self.subTest(value=value):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
