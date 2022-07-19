@@ -1,7 +1,6 @@
 import shutil
 import tempfile
 
-import django.forms
 from django import forms
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
