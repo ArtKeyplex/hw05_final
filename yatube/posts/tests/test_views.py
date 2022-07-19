@@ -146,14 +146,11 @@ class PostUrlTests(TestCase):
         """Шаблон create_post сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:post_create'))
         form = PostForm()
-        expected = (forms.fields.CharField,
-                    forms.fields.ImageField,
-                    forms.fields.ChoiceField)
         fields = form.fields
         for value in fields:
             with self.subTest(value=value):
                 form_field = response.context.get('form').fields.get(value)
-                self.assertIsInstance(form_field, expected)
+                self.assertIsInstance(form_field, forms.Field)
 
     def test_edit_post_page_show_correct_context(self):
         """Шаблон edit_post сформирован с правильным контекстом."""
