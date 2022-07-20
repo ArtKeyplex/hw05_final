@@ -91,40 +91,30 @@ class PostUrlTests(TestCase):
         """Шаблон index сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:index'))
         post_object = response.context['page_obj'][0]
-        task_text_0 = post_object.text
-        task_group = post_object.group
-        task_image = post_object.image
-        self.assertEqual(task_text_0, self.post.text)
-        self.assertEqual(task_group, self.post.group)
-        self.assertEqual(task_image, self.post.image)
+        self.check_fields(post_object, self.post)
 
     def test_group_list_page_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
         response = (self.authorized_client.
                     get(reverse('posts:group_list',
-                                kwargs={'slug': 'test-slug'})))
+                                kwargs={'slug': f'{self.group.slug}'})))
         first_object = response.context['page_obj'][0]
-        self.assertEqual(first_object.text, self.post.text)
-        self.assertEqual(response.context.get('group').title,
-                         'Тестовая группа')
-        self.assertEqual(response.context.get('group').slug,
-                         'test-slug')
-        self.assertEqual(response.context.get('group').id, self.post.id)
+        self.check_fields(first_object, self.post)
 
     def test_profile_page_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
         response = (self.authorized_client.
                     get(reverse('posts:profile',
-                                kwargs={'username': 'author'})))
-        self.assertEqual(response.context.get('user').username,
-                         f'{self.post.author}')
-        self.assertEqual(response.context.get('user').id,
-                         self.post.id)
+                                kwargs={'username': f'{self.post.author}'})))
+        post_object = response.context['page_obj'][0]
+        self.check_fields(post_object, self.post)
 
-    def check_fields(self, obj_list):
-        for obj, post_obj in obj_list.items():
-            with self.subTest(obj=obj):
-                self.assertEqual(obj, post_obj)
+    def check_fields(self, context, post):
+        post_object = context
+        self.assertEqual(post_object.text, post.text)
+        self.assertEqual(post_object.group, post.group)
+        self.assertEqual(post_object.image, post.image)
+        self.assertEqual(post_object.id, post.id)
 
     def test_post_detail_page_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
@@ -132,15 +122,8 @@ class PostUrlTests(TestCase):
                                               ('posts:post_detail',
                                                kwargs={'post_id':
                                                        f'{self.post.id}'}))
-        index_object = response.context['post']
-        self.object_list = {
-            index_object.text: self.post.text,
-            index_object.author: self.post.author,
-            index_object.pub_date: self.post.pub_date,
-            index_object.image: self.post.image
-
-        }
-        self.check_fields(self.object_list)
+        context = response.context['post']
+        self.check_fields(context, self.post)
 
     def test_create_post_page_show_correct_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
@@ -163,15 +146,12 @@ class PostUrlTests(TestCase):
                                               ('posts:post_edit',
                                                kwargs={'post_id':
                                                        f'{test_post.id}'}))
-        form_fields = {
-            'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField,
-            'image': forms.fields.ImageField,
-        }
-        for value, expected in form_fields.items():
+        form = PostForm()
+        fields = form.fields
+        for value in fields:
             with self.subTest(value=value):
                 form_field = response.context.get('form').fields.get(value)
-                self.assertIsInstance(form_field, expected)
+                self.assertIsInstance(form_field, forms.Field)
 
     def test_comment_appears_on_the_page(self):
         Post.objects.create(
@@ -233,7 +213,7 @@ class PostUrlTests(TestCase):
         Follow.objects.create(author=self.user, user=self.author)
         response = self.authorized_author.get(reverse('posts:follow_index'))
         first_object = response.context['page_obj'][0]
-        self.assertEqual(first_object.text, self.post.text)
+        self.assertEqual(first_object, self.post)
 
 
 class PaginatorViewsTest(TestCase):
